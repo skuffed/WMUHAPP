@@ -10,7 +10,6 @@
 // bar items. The first one is selected.](https://flutter.github.io/assets-for-api-docs/assets/material/bottom_navigation_bar.png)
 
 import 'package:flutter/material.dart';
-import 'dart:async';
 
 import 'package:just_audio/just_audio.dart';
 
