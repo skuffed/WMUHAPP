@@ -10,6 +10,7 @@
 // bar items. The first one is selected.](https://flutter.github.io/assets-for-api-docs/assets/material/bottom_navigation_bar.png)
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:just_audio/just_audio.dart';
 
@@ -90,10 +91,31 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
       'Index 1: Schedule',
       style: optionStyle,
     ),
-    Text(
-      'Index 2: Contact',
-      style: optionStyle,
-    ),
+    Column(
+      children: <Widget> [
+        new Text("Contact Us!", style: TextStyle(fontSize: 40)),
+        new RaisedButton(
+        onPressed: () => launch("tel://4846643239"),
+        child: new Text("Call the Radio Station", style: TextStyle(fontSize: 25)),
+        color: Colors.green,
+        ),
+        new RaisedButton(
+        onPressed: () => launch("https://www.facebook.com/pages/WMUH/105617379471492"),
+        child: new Text("Visit our Facebook Page", style: TextStyle(fontSize: 25)),
+        color: Colors.blue,
+        ),
+        new RaisedButton(
+        onPressed: () => launch("https://twitter.com/wmuhfm"),
+        child: new Text("Visit our Twitter Page", style: TextStyle(fontSize: 25)),
+        color: Colors.cyanAccent,
+        ),
+        new RaisedButton(
+        onPressed: () => launch("https://www.instagram.com/wmuhfm/?hl=en"),
+        child: new Text("Visit our Instagram Page", style: TextStyle(fontSize: 25)),
+        color: Colors.purpleAccent,
+        ),
+      ],
+    )
   ];
 
   void _onItemTapped(int index) {
@@ -131,5 +153,7 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
         onTap: _onItemTapped,
       ),
     );
+
+
   }
 }
