@@ -36,18 +36,56 @@ class MyStatefulWidget extends StatefulWidget {
   _MyStatefulWidgetState createState() => _MyStatefulWidgetState();
 }
 
+
 class _MyStatefulWidgetState extends State<MyStatefulWidget> {
   int _selectedIndex = 0;
   static const TextStyle optionStyle =
   TextStyle(fontSize: 30, fontWeight: FontWeight.bold);
   static String url = 'http://192.104.181.26:8000/stream';
-  static final player = AudioPlayer();
-  var duration = player.setUrl(url);
+  static final _player = AudioPlayer();
+  var duration = _player.setUrl(url);
 
   static List<Widget> _widgetOptions = <Widget>[
-    FlatButton(
-      child: Icon(Icons.play_circle_filled),
-      onPressed: () => player.play(),
+    StreamBuilder<FullAudioPlaybackState>(
+      stream: _player.fullPlaybackStateStream,
+      builder: (context, snapshot) {
+        final fullState = snapshot.data;
+        final state = fullState?.state;
+        final buffering = fullState?.buffering;
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (state == AudioPlaybackState.connecting ||
+                buffering == true)
+              Container(
+                margin: EdgeInsets.all(8.0),
+                width: 64.0,
+                height: 64.0,
+                child: CircularProgressIndicator(),
+              )
+            else if (state == AudioPlaybackState.playing)
+              IconButton(
+                icon: Icon(Icons.pause),
+                iconSize: 64.0,
+                onPressed: _player.pause,
+              )
+            else
+              IconButton(
+                icon: Icon(Icons.play_arrow),
+                iconSize: 64.0,
+                onPressed: _player.play,
+              ),
+            IconButton(
+              icon: Icon(Icons.stop),
+              iconSize: 64.0,
+              onPressed: state == AudioPlaybackState.stopped ||
+                  state == AudioPlaybackState.none
+                  ? null
+                  : _player.stop,
+            ),
+          ],
+        );
+      },
     ),
     Text(
       'Index 1: Schedule',
