@@ -91,7 +91,7 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
       style: optionStyle,
     ),
     Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: <Widget> [
         new Text("Contact Us!", style: TextStyle(fontSize: 40)),
         new RaisedButton(
