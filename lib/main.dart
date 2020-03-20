@@ -11,7 +11,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import 'package:just_audio/just_audio.dart';
 
 void main() => runApp(MyApp());
@@ -92,6 +91,7 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
       style: optionStyle,
     ),
     Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget> [
         new Text("Contact Us!", style: TextStyle(fontSize: 40)),
         new RaisedButton(
@@ -114,8 +114,11 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
         child: new Text("Visit our Instagram Page", style: TextStyle(fontSize: 25)),
         color: Colors.purpleAccent,
         ),
+        new Image(
+          image: AssetImage('images/WMUH70thAnniversary-46.jpg')
+        ),
       ],
-    )
+    ),
   ];
 
   void _onItemTapped(int index) {
