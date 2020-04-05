@@ -9,11 +9,30 @@
 // ![A scaffold with a bottom navigation bar containing three bottom navigation
 // bar items. The first one is selected.](https://flutter.github.io/assets-for-api-docs/assets/material/bottom_navigation_bar.png)
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:just_audio/just_audio.dart';
+import 'package:audio_service/audio_service.dart';
 
 void main() => runApp(MyApp());
+
+final playControl = MediaControl(
+  androidIcon: 'drawable/ic_action_play_arrow',
+  label: 'Play',
+  action: MediaAction.play,
+);
+final pauseControl = MediaControl(
+  androidIcon: 'drawable/ic_action_pause',
+  label: 'Pause',
+  action: MediaAction.pause,
+);
+final stopControl = MediaControl(
+  androidIcon: 'drawable/ic_action_stop',
+  label: 'Stop',
+  action: MediaAction.stop,
+);
 
 /// This Widget is the main application widget.
 class MyApp extends StatelessWidget {
@@ -23,113 +42,211 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: _title,
-      home: MyStatefulWidget(),
+      home: AudioServiceWidget(child: MainScreen()),
     );
   }
 }
 
-class MyStatefulWidget extends StatefulWidget {
-  MyStatefulWidget({Key key}) : super(key: key);
+//class MyStatefulWidget extends StatefulWidget {
+//  MyStatefulWidget({Key key}) : super(key: key);
+//
+//  @override
+//  _MyStatefulWidgetState createState() => _MyStatefulWidgetState();
+//}
+
+class AudioServiceWidget extends StatefulWidget {
+  final Widget child;
+
+  AudioServiceWidget({@required this.child});
 
   @override
-  _MyStatefulWidgetState createState() => _MyStatefulWidgetState();
+  _AudioServiceWidgetState createState() => _AudioServiceWidgetState();
 }
 
+class MainScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Tune In!")),
+      body: Center(
+        child: StreamBuilder<PlaybackState>(
+          stream: AudioService.playbackStateStream,
+          builder: (context, snapshot) {
+            final state =
+                snapshot.data?.basicState ?? BasicPlaybackState.stopped;
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (state == BasicPlaybackState.playing)
+                  RaisedButton(child: Text("Pause"), onPressed: pause)
+                else
+                  RaisedButton(child: Text("Play"), onPressed: play),
+                if (state != BasicPlaybackState.stopped)
+                  RaisedButton(child: Text("Stop"), onPressed: stop),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
 
-class _MyStatefulWidgetState extends State<MyStatefulWidget> {
-  int _selectedIndex = 0;
-  static const TextStyle optionStyle =
-  TextStyle(fontSize: 30, fontWeight: FontWeight.bold);
-  static String url = 'http://192.104.181.26:8000/stream';
-  static final _player = AudioPlayer();
-  var duration = _player.setUrl(url);
+  play() async {
+    if (await AudioService.running) {
+      AudioService.play();
+    } else {
+      AudioService.start(backgroundTaskEntrypoint: _backgroundTaskEntrypoint);
+    }
+  }
 
-  static List<Widget> _widgetOptions = <Widget>[
-    StreamBuilder<FullAudioPlaybackState>(
-      stream: _player.fullPlaybackStateStream,
-      builder: (context, snapshot) {
-        final fullState = snapshot.data;
-        final state = fullState?.state;
-        final buffering = fullState?.buffering;
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (state == AudioPlaybackState.connecting ||
-                buffering == true)
-              Container(
-                margin: EdgeInsets.all(8.0),
-                width: 64.0,
-                height: 64.0,
-                child: CircularProgressIndicator(),
-              )
-            else if (state == AudioPlaybackState.playing)
-              IconButton(
-                icon: Icon(Icons.pause),
-                iconSize: 64.0,
-                onPressed: _player.pause,
-              )
-            else
-              IconButton(
-                icon: Icon(Icons.play_arrow),
-                iconSize: 64.0,
-                onPressed: _player.play,
-              ),
-            IconButton(
-              icon: Icon(Icons.stop),
-              iconSize: 64.0,
-              onPressed: state == AudioPlaybackState.stopped ||
-                  state == AudioPlaybackState.none
-                  ? null
-                  : _player.stop,
-            ),
-          ],
-        );
-      },
-    ),
-    Text(
-      'Index 1: Schedule',
-      style: optionStyle,
-    ),
-    Text(
-      'Index 2: Contact',
-      style: optionStyle,
-    ),
-  ];
+  pause() => AudioService.pause();
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+  stop() => AudioService.stop();
+}
+
+_backgroundTaskEntrypoint() {
+  AudioServiceBackground.run(() => AudioPlayerTask());
+}
+
+class AudioPlayerTask extends BackgroundAudioTask {
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  final _completer = Completer();
+
+  @override
+  Future<void> onStart() async {
+    // Broadcast that we're playing, and what controls are available.
+    AudioServiceBackground.setState(
+        controls: [pauseControl, stopControl],
+        basicState: BasicPlaybackState.playing);
+
+    await _audioPlayer.setUrl("http://192.104.181.26:8000/stream");
+    _audioPlayer.play();
+    await _completer.future;
+    // Broadcast that we've stopped.
+    AudioServiceBackground.setState(
+        controls: [], basicState: BasicPlaybackState.playing);
+  }
+
+  @override
+  void onStop() {
+    _audioPlayer.stop();
+    _completer.complete();
+  }
+
+  @override
+  void onPlay() {
+    // Broadcast that we're playing, and what controls are available.
+    AudioServiceBackground.setState(
+        controls: [pauseControl, stopControl],
+        basicState: BasicPlaybackState.playing);
+
+    _audioPlayer.play();
+  }
+
+  @override
+  void onPause() {
+    // Broadcast that we're paused, and what controls are available.
+    AudioServiceBackground.setState(
+        controls: [playControl, stopControl],
+        basicState: BasicPlaybackState.playing);
+
+    _audioPlayer.pause();
+  }
+}
+
+class _AudioServiceWidgetState extends State<AudioServiceWidget>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    AudioService.connect();
+  }
+
+  @override
+  void dispose() {
+    AudioService.disconnect();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        AudioService.connect();
+        break;
+      case AppLifecycleState.paused:
+        AudioService.disconnect();
+        break;
+      default:
+        break;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('91.7 WMUH'),
-      ),
-      body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.radio),
-            title: Text('Stream'),
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.schedule),
-            title: Text('Schedule'),
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.message),
-            title: Text('Contact'),
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.amber[800],
-        onTap: _onItemTapped,
-      ),
+    return WillPopScope(
+      onWillPop: () async {
+        AudioService.disconnect();
+        return true;
+      },
+      child: widget.child,
     );
   }
 }
+
+//class _MyStatefulWidgetState extends State<MyStatefulWidget> {
+//  int _selectedIndex = 0;
+//  static const TextStyle optionStyle =
+//  TextStyle(fontSize: 30, fontWeight: FontWeight.bold);
+//
+//  static List<Widget> _widgetOptions = <Widget>[
+//    MainScreen(),
+//    Text(
+//      'Index 1: Schedule',
+//      style: optionStyle,
+//    ),
+//    Text(
+//      'Index 2: Contact',
+//      style: optionStyle,
+//    ),
+//  ];
+//
+//  void _onItemTapped(int index) {
+//    setState(() {
+//      _selectedIndex = index;
+//    });
+//  }
+//
+//  @override
+//  Widget build(BuildContext context) {
+//    return Scaffold(
+//      appBar: AppBar(
+//        title: const Text('91.7 WMUH'),
+//      ),
+//      body: Center(
+//        child: _widgetOptions.elementAt(_selectedIndex),
+//      ),
+//      bottomNavigationBar: BottomNavigationBar(
+//        items: const <BottomNavigationBarItem>[
+//          BottomNavigationBarItem(
+//            icon: Icon(Icons.radio),
+//            title: Text('Stream'),
+//          ),
+//          BottomNavigationBarItem(
+//            icon: Icon(Icons.schedule),
+//            title: Text('Schedule'),
+//          ),
+//          BottomNavigationBarItem(
+//            icon: Icon(Icons.message),
+//            title: Text('Contact'),
+//          ),
+//        ],
+//        currentIndex: _selectedIndex,
+//        selectedItemColor: Colors.amber[800],
+//        onTap: _onItemTapped,
+//      ),
+//    );
+//  }
+//}
