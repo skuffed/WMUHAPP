@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1043325288169",
+    "firebase_url": "https://wmuh-f578d.firebaseio.com",
+    "project_id": "wmuh-f578d",
+    "storage_bucket": "wmuh-f578d.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1043325288169:android:9acbfb55271e54910eba78",
+        "android_client_info": {
+          "package_name": "org.wmuh.wmuh_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1043325288169-qfa9cqpe9lhop5kqdc83v77rk8ku1ovr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDGHOlx2rRsidscnCzRkuoC9h_-Puk1Pj8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1043325288169-qfa9cqpe9lhop5kqdc83v77rk8ku1ovr.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1043325288169-33s8f29dg2s43f8ntfcrqkt5nubf8q6q.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "org.wmuh.wmuhApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

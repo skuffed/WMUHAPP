@@ -12,6 +12,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 void main() => runApp(MyApp());
 
@@ -43,6 +44,24 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
   static String url = 'http://192.104.181.26:8000/stream';
   static final _player = AudioPlayer();
   var duration = _player.setUrl(url);
+  static final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  static var _tsvisibility = false;
+  List<Item> items = List();
+  static Item item;
+  static DatabaseReference itemRef;
+
+  static void handleSubmit() {
+    final FormState form = formKey.currentState;
+
+    if (form.validate()) {
+
+      form.save();
+      form.reset();
+      itemRef.push().set(item.toJson());
+
+    }
+  }
+
 
   static List<Widget> _widgetOptions = <Widget>[
     StreamBuilder<FullAudioPlaybackState>(
@@ -119,13 +138,96 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
         ),
       ],
     ),
+    Column(
+      children: <Widget>[
+
+        Text('Want the Radio Station to play your requests? Enter Song Title and Artist in forms below!', style: TextStyle(fontSize: 20, color: Colors.blue)),
+        Flexible(
+          flex: 0,
+          child: Center(
+            child: Form(
+              key: formKey,
+              child: Flex(
+                direction: Axis.vertical,
+                children: <Widget>[
+                  ListTile(
+                    leading: Icon(Icons.info),
+                    title: TextFormField(
+                      initialValue: "",
+                      onSaved: (val) => item.title = val,
+                      validator: (val) => val == "" ? val : null,
+                    ),
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.info),
+                    title: TextFormField(
+                      initialValue: '',
+                      onSaved: (val) => item.body = val,
+                      validator: (val) => val == "" ? val : null,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.send),
+                    onPressed: () {
+                      handleSubmit();
+
+                    },
+                  ),
+
+                  Visibility(
+                      visible: true,
+                      child: Text(
+                          'If form turns red after pressing submit button, one or more fields were not properly filled out. If form empties after pressing the submit button, your song has been successfully submitted.', style: TextStyle(fontSize: 16)
+                      ),
+
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+      ],
+    ),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    item = Item("", "");
+    final FirebaseDatabase database = FirebaseDatabase.instance; //Rather then just writing FirebaseDatabase(), get the instance.
+    itemRef = database.reference().child('items');
+    itemRef.onChildAdded.listen(_onEntryAdded);
+    itemRef.onChildChanged.listen(_onEntryChanged);
+
+  }
+
+  _onEntryAdded(Event event) {
+    setState(() {
+      items.add(Item.fromSnapshot(event.snapshot));
+      _tsvisibility = true;
+    });
+  }
+
+  _onEntryChanged(Event event) {
+    var old = items.singleWhere((entry) {
+      return entry.key == event.snapshot.key;
+    });
+    setState(() {
+      items[items.indexOf(old)] = Item.fromSnapshot(event.snapshot);
+    });
+  }
+
+
+
+
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -150,6 +252,10 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
             icon: Icon(Icons.message),
             title: Text('Contact'),
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.message),
+            title: Text('Submit'),
+          ),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.amber[800],
@@ -158,5 +264,25 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
     );
 
 
+  }
+}
+
+class Item {
+  String key;
+  String title;
+  String body;
+
+  Item(this.title, this.body);
+
+  Item.fromSnapshot(DataSnapshot snapshot)
+      : key = snapshot.key,
+        title = snapshot.value["title"],
+        body = snapshot.value["body"];
+
+  toJson() {
+    return {
+      "title": title,
+      "body": body,
+    };
   }
 }
