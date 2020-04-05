@@ -45,7 +45,7 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
   static final _player = AudioPlayer();
   var duration = _player.setUrl(url);
   static final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  static var _tsvisibility = false;
+
   List<Item> items = List();
   static Item item;
   static DatabaseReference itemRef;
@@ -174,13 +174,10 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
                     },
                   ),
 
-                  Visibility(
-                      visible: true,
-                      child: Text(
+                  Text(
                           'If form turns red after pressing submit button, one or more fields were not properly filled out. If form empties after pressing the submit button, your song has been successfully submitted.', style: TextStyle(fontSize: 16)
                       ),
 
-                  ),
                 ],
               ),
             ),
@@ -205,7 +202,7 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
   _onEntryAdded(Event event) {
     setState(() {
       items.add(Item.fromSnapshot(event.snapshot));
-      _tsvisibility = true;
+
     });
   }
 
