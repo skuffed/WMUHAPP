@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_service/audio_service.dart';
+import 'scraper.dart' as scraper;
 
 void main() => runApp(MyApp());
 
@@ -64,10 +65,40 @@ class AudioServiceWidget extends StatefulWidget {
 }
 
 class MainScreen extends StatelessWidget {
+  static Stream<String> StreamCreator(Duration interval) {
+    StreamController<String> controller;
+    Timer timer;
+    String songData;
+
+    Future<void> callGetSong(_) async {
+      songData = await scraper.getSong();
+      controller.sink.add(songData);
+    }
+
+    void startTimer() {
+      timer = Timer.periodic(interval, callGetSong);
+    }
+
+    void stopTimer() {
+      if (timer != null) {
+        timer.cancel();
+        timer = null;
+      }
+    }
+
+    controller = StreamController<String>(
+        onListen: startTimer,
+        onPause: stopTimer,
+        onResume: startTimer,
+        onCancel: stopTimer);
+
+    return controller.stream;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Tune In!")),
+      appBar: AppBar(title: Text("91.7 WMUH")),
       body: Center(
         child: StreamBuilder<PlaybackState>(
           stream: AudioService.playbackStateStream,
@@ -83,6 +114,14 @@ class MainScreen extends StatelessWidget {
                   RaisedButton(child: Text("Play"), onPressed: play),
                 if (state != BasicPlaybackState.stopped)
                   RaisedButton(child: Text("Stop"), onPressed: stop),
+                StreamBuilder<String>(
+                  stream: StreamCreator(const Duration(seconds: 5)),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) return Text('${snapshot.error}');
+                    if (snapshot.hasData) return Text('${snapshot.data}');
+                    return const CircularProgressIndicator();
+                  },
+                ),
               ],
             );
           },
