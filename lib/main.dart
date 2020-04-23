@@ -95,7 +95,7 @@ class MainScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Listen")),
+      //appBar: AppBar(title: Text("Listen")),
       body: Center(
         child: StreamBuilder<PlaybackState>(
           stream: AudioService.playbackStateStream,
@@ -138,7 +138,9 @@ class MainScreen extends StatelessWidget {
     } else {
       AudioService.start(
           backgroundTaskEntrypoint: _backgroundTaskEntrypoint,
-          androidNotificationChannelName: '91.7 WMUH');
+          androidNotificationChannelName: '91.7 WMUH',
+          notificationColor: 0xA12237,
+          androidNotificationIcon: 'drawable/ic_stat_radio');
     }
   }
 
@@ -272,30 +274,37 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('91.7 WMUH'),
-      ),
-      body: _children[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        onTap: onTabTapped,
-        currentIndex: _currentIndex, // this will be set when a new tab is tapped
-        items: [
-          BottomNavigationBarItem(
-            icon: new Icon(Icons.schedule),
-            title: new Text('Schedule'),
-          ),
-          BottomNavigationBarItem(
-            icon: new Icon(Icons.radio),
-            title: new Text('Listen'),
-          ),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.message),
-              title: Text('Contact Us')
-          )
+    return SafeArea(
+        child: Scaffold(
+          appBar: PreferredSize(
+              preferredSize: Size.fromHeight(107.5),
+              child: AppBar(
+                flexibleSpace: Image(
+                  image: AssetImage('assets/title.png'),
+                  fit: BoxFit.cover,
+                ),
+                backgroundColor: Colors.transparent,
+              )),
+          body: _children[_currentIndex],
+          bottomNavigationBar: BottomNavigationBar(
+            onTap: onTabTapped,
+            currentIndex:
+                _currentIndex, // this will be set when a new tab is tapped
+            selectedItemColor: Colors.red[600],
+            items: [
+              BottomNavigationBarItem(
+                icon: new Icon(Icons.schedule),
+                title: new Text('Schedule'),
+              ),
+              BottomNavigationBarItem(
+                icon: new Icon(Icons.radio),
+                title: new Text('Listen'),
+              ),
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.message), title: Text('Contact Us'))
         ],
       ),
-    );
+    ));
   }
 
   void onTabTapped(int index) {

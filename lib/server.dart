@@ -67,13 +67,13 @@ class HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Submit Songs!'),
-      ),
+//      appBar: AppBar(
+//        title: Text('Submit Songs!'),
+//      ),
       resizeToAvoidBottomPadding: false,
       body: Column(
         children: <Widget>[
-          Text('Want to hear your favorite song on the air? Enter your request below!', style: TextStyle(fontSize: 20)),
+          Text('\nWant to hear your favorite song on the air?\nEnter your request below!', style: TextStyle(fontSize: 20)),
           Flexible(
             flex: 0,
             child: Center(
@@ -82,18 +82,18 @@ class HomeState extends State<Home> {
                 child: Flex(
                   direction: Axis.vertical,
                   children: <Widget>[
-                    Text("Song Title"),
+                    Text("\n\nSong Title"),
                     ListTile(
-                      leading: Icon(Icons.info),
+                      //leading: Icon(Icons.info),
                       title: TextFormField(
                         initialValue: "",
                         onSaved: (val) => item.title = val,
                         validator: (val) => val == "" ? val : null,
                       ),
                     ),
-                    Text("Artist"),
+                    Text("\nArtist"),
                     ListTile(
-                      leading: Icon(Icons.info),
+                      //leading: Icon(Icons.info),
                       title: TextFormField(
                         initialValue: '',
                         onSaved: (val) => item.body = val,
@@ -107,7 +107,7 @@ class HomeState extends State<Home> {
                       },
                     ),
                     Text(
-                        'If form turns red after pressing submit button, one or more fields were not properly filled out. If form empties after pressing the submit button, your song has been successfully submitted.', style: TextStyle(fontSize: 16)
+                        '\nIf form turns red after pressing submit button, one or more fields were not properly filled out.\nIf form empties after pressing the submit button, your song has been successfully submitted.', style: TextStyle(fontSize: 16)
                     ),
                   ],
                 ),

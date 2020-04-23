@@ -20,9 +20,9 @@ class RadioScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => new Scaffold(
 
-    appBar: new AppBar(
-      title: new Text("Contact Us!"),
-    ),
+//    appBar: new AppBar(
+//      title: new Text("Contact Us!"),
+//    ),
     body: new Center(
       child: new Column(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -71,10 +71,10 @@ class RadioScreen extends StatelessWidget {
         ] ,
       ),
     ),
-    bottomNavigationBar: BottomAppBar(
-      color: Colors.green,
-      child: new Text(" "),
-    ),
+//    bottomNavigationBar: BottomAppBar(
+//      color: Colors.green,
+//      child: new Text(" "),
+//    ),
 
 );
 
