@@ -11,11 +11,14 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_service/audio_service.dart';
 import 'scraper.dart' as scraper;
+import 'contacts.dart' as contacts;
+import 'server.dart' as server;
 
 void main() => runApp(MyApp());
 
@@ -37,23 +40,16 @@ final stopControl = MediaControl(
 
 /// This Widget is the main application widget.
 class MyApp extends StatelessWidget {
-  static const String _title = 'Flutter Code Sample';
+  static const String _title = '91.7 WMUH';
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: _title,
-      home: AudioServiceWidget(child: MainScreen()),
+      home: AudioServiceWidget(child: Home()),
     );
   }
 }
-
-//class MyStatefulWidget extends StatefulWidget {
-//  MyStatefulWidget({Key key}) : super(key: key);
-//
-//  @override
-//  _MyStatefulWidgetState createState() => _MyStatefulWidgetState();
-//}
 
 class AudioServiceWidget extends StatefulWidget {
   final Widget child;
@@ -64,41 +60,42 @@ class AudioServiceWidget extends StatefulWidget {
   _AudioServiceWidgetState createState() => _AudioServiceWidgetState();
 }
 
-class MainScreen extends StatelessWidget {
-  static Stream<String> StreamCreator(Duration interval) {
-    StreamController<String> controller;
-    Timer timer;
-    String songData;
+Stream<List<String>> streamCreator(Duration interval) {
+  StreamController<List<String>> controller;
+  Timer timer;
+  List<String> songData;
 
-    Future<void> callGetSong(_) async {
-      songData = await scraper.getSong();
-      controller.sink.add(songData);
-    }
-
-    void startTimer() {
-      timer = Timer.periodic(interval, callGetSong);
-    }
-
-    void stopTimer() {
-      if (timer != null) {
-        timer.cancel();
-        timer = null;
-      }
-    }
-
-    controller = StreamController<String>(
-        onListen: startTimer,
-        onPause: stopTimer,
-        onResume: startTimer,
-        onCancel: stopTimer);
-
-    return controller.stream;
+  Future<void> callGetSong(_) async {
+    songData = await scraper.getSong();
+    controller.sink.add(songData);
   }
 
+  void startTimer() {
+    timer = Timer.periodic(interval, callGetSong);
+  }
+
+  void stopTimer() {
+    if (timer != null) {
+      timer.cancel();
+      timer = null;
+      controller.close();
+    }
+  }
+
+  controller = StreamController<List<String>>(
+      onListen: startTimer,
+      onPause: stopTimer,
+      onResume: startTimer,
+      onCancel: stopTimer);
+
+  return controller.stream;
+}
+
+class MainScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("91.7 WMUH")),
+      appBar: AppBar(title: Text("Listen")),
       body: Center(
         child: StreamBuilder<PlaybackState>(
           stream: AudioService.playbackStateStream,
@@ -114,11 +111,16 @@ class MainScreen extends StatelessWidget {
                   RaisedButton(child: Text("Play"), onPressed: play),
                 if (state != BasicPlaybackState.stopped)
                   RaisedButton(child: Text("Stop"), onPressed: stop),
-                StreamBuilder<String>(
-                  stream: StreamCreator(const Duration(seconds: 5)),
+                StreamBuilder<List<String>>(
+                  stream: streamCreator(const Duration(seconds: 5)),
                   builder: (context, snapshot) {
                     if (snapshot.hasError) return Text('${snapshot.error}');
-                    if (snapshot.hasData) return Text('${snapshot.data}');
+                    if (snapshot.hasData)
+                      return Text("Artist: " +
+                          snapshot.data[0] +
+                          "\n" +
+                          "Song: " +
+                          snapshot.data[1]);
                     return const CircularProgressIndicator();
                   },
                 ),
@@ -134,7 +136,9 @@ class MainScreen extends StatelessWidget {
     if (await AudioService.running) {
       AudioService.play();
     } else {
-      AudioService.start(backgroundTaskEntrypoint: _backgroundTaskEntrypoint);
+      AudioService.start(
+          backgroundTaskEntrypoint: _backgroundTaskEntrypoint,
+          androidNotificationChannelName: '91.7 WMUH');
     }
   }
 
@@ -150,6 +154,10 @@ _backgroundTaskEntrypoint() {
 class AudioPlayerTask extends BackgroundAudioTask {
   final AudioPlayer _audioPlayer = AudioPlayer();
   final _completer = Completer();
+  var currentSong;
+  var setItem;
+  Stream<List<String>> infoStream;
+  StreamSubscription<List<String>> subscription;
 
   @override
   Future<void> onStart() async {
@@ -160,14 +168,26 @@ class AudioPlayerTask extends BackgroundAudioTask {
 
     await _audioPlayer.setUrl("http://192.104.181.26:8000/stream");
     _audioPlayer.play();
+    infoStream = streamCreator(const Duration(seconds: 5));
+    subscription = infoStream.listen((data) {
+      currentSong = MediaItem(
+        id: "http://192.104.181.26:8000/stream",
+        album: "The Only Station That Matters",
+        title: data[1],
+        artist: data[0],
+//      artUri: "",
+      );
+      setItem = AudioServiceBackground.setMediaItem(currentSong);
+    }, cancelOnError: true);
     await _completer.future;
-    // Broadcast that we've stopped.
-    AudioServiceBackground.setState(
-        controls: [], basicState: BasicPlaybackState.playing);
   }
 
   @override
   void onStop() {
+    // Broadcast that we've stopped.
+    AudioServiceBackground.setState(
+        controls: [], basicState: BasicPlaybackState.stopped);
+
     _audioPlayer.stop();
     _completer.complete();
   }
@@ -187,7 +207,7 @@ class AudioPlayerTask extends BackgroundAudioTask {
     // Broadcast that we're paused, and what controls are available.
     AudioServiceBackground.setState(
         controls: [playControl, stopControl],
-        basicState: BasicPlaybackState.playing);
+        basicState: BasicPlaybackState.paused);
 
     _audioPlayer.pause();
   }
@@ -235,57 +255,52 @@ class _AudioServiceWidgetState extends State<AudioServiceWidget>
   }
 }
 
-//class _MyStatefulWidgetState extends State<MyStatefulWidget> {
-//  int _selectedIndex = 0;
-//  static const TextStyle optionStyle =
-//  TextStyle(fontSize: 30, fontWeight: FontWeight.bold);
-//
-//  static List<Widget> _widgetOptions = <Widget>[
-//    MainScreen(),
-//    Text(
-//      'Index 1: Schedule',
-//      style: optionStyle,
-//    ),
-//    Text(
-//      'Index 2: Contact',
-//      style: optionStyle,
-//    ),
-//  ];
-//
-//  void _onItemTapped(int index) {
-//    setState(() {
-//      _selectedIndex = index;
-//    });
-//  }
-//
-//  @override
-//  Widget build(BuildContext context) {
-//    return Scaffold(
-//      appBar: AppBar(
-//        title: const Text('91.7 WMUH'),
-//      ),
-//      body: Center(
-//        child: _widgetOptions.elementAt(_selectedIndex),
-//      ),
-//      bottomNavigationBar: BottomNavigationBar(
-//        items: const <BottomNavigationBarItem>[
-//          BottomNavigationBarItem(
-//            icon: Icon(Icons.radio),
-//            title: Text('Stream'),
-//          ),
-//          BottomNavigationBarItem(
-//            icon: Icon(Icons.schedule),
-//            title: Text('Schedule'),
-//          ),
-//          BottomNavigationBarItem(
-//            icon: Icon(Icons.message),
-//            title: Text('Contact'),
-//          ),
-//        ],
-//        currentIndex: _selectedIndex,
-//        selectedItemColor: Colors.amber[800],
-//        onTap: _onItemTapped,
-//      ),
-//    );
-//  }
-//}
+class Home extends StatefulWidget {
+  @override
+  State<StatefulWidget> createState() {
+    return _HomeState();
+  }
+}
+
+class _HomeState extends State<Home> {
+  int _currentIndex = 1;
+  final List<Widget> _children = [
+    server.Home(),
+    MainScreen(),
+    contacts.RadioScreen()
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('91.7 WMUH'),
+      ),
+      body: _children[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        onTap: onTabTapped,
+        currentIndex: _currentIndex, // this will be set when a new tab is tapped
+        items: [
+          BottomNavigationBarItem(
+            icon: new Icon(Icons.schedule),
+            title: new Text('Schedule'),
+          ),
+          BottomNavigationBarItem(
+            icon: new Icon(Icons.radio),
+            title: new Text('Listen'),
+          ),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.message),
+              title: Text('Contact Us')
+          )
+        ],
+      ),
+    );
+  }
+
+  void onTabTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+}
