@@ -25,6 +25,10 @@
 ///         License:   SIL (http://scripts.sil.org/OFL)
 ///         Homepage:  http://www.entypo.com
 ///
+///  This class is for the primary purpose of utilizing the official Facebook, Twitter, and Instagram icons
+///  in the contacts screen because they are not built into the primary icon class that comes with flutter.
+///  Each custom icon was downloaded and has their custom icon data stored here for use in the contacts class.
+///
 import 'package:flutter/widgets.dart';
 
 class SocialMedia {
