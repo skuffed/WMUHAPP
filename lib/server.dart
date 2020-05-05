@@ -106,9 +106,9 @@ class HomeState extends State<Home> {
                         handleSubmit();
                       },
                     ),
-                    Text(
-                        '\nIf form turns red after pressing submit button, one or more fields were not properly filled out.\nIf form empties after pressing the submit button, your song has been successfully submitted.', style: TextStyle(fontSize: 16)
-                    ),
+//                    Text(
+//                        '\nIf form turns red after pressing submit button, one or more fields were not properly filled out.\nIf form empties after pressing the submit button, your song has been successfully submitted.', style: TextStyle(fontSize: 16)
+//                    ),
                   ],
                 ),
               ),

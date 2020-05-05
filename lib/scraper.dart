@@ -7,21 +7,26 @@ Future<List<String>> getSong()async {
   Response response = await client.get(
       'https://spinitron.com/WMUH/'
   );
-
+  List<String> list = List();
   // Use html parser and query selector
   var document = parse(response.body);
-  var x = document.querySelectorAll('class.artist');
   List<Element> links = document.querySelectorAll('span');
+
+  final elements = document.getElementsByClassName('spin-art-container');
+
+  list = elements.map((element) => element.getElementsByTagName("img")[0].attributes['src']).toList();
 
   //document.querySelectorAll('a').forEach((value) {
   //print(value.outerHtml);
   //});
 
-  String parsedString1 = parse(links[0].text).documentElement.text;
+  String parsedString1 = parse(links?.elementAt(0)?.text ?? "").documentElement.text;
   String parsedString2 = parse(links[1].text).documentElement.text;
+  String parsedString3 = parse(list?.elementAt(0) ?? "").documentElement.text;
+  String parsedString4 = parse(links[2].text).documentElement.text;
 //  String newLine = '\n';
 //  String artist = 'Artist: ';
 //  String song = 'Song: ';
 //  var songArtist = artist + parsedString1 + newLine + song + parsedString2;
-  return [parsedString1, parsedString2];
+  return [parsedString1, parsedString2, parsedString3, parsedString4];
 }

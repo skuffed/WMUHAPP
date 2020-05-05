@@ -19,9 +19,11 @@ import 'package:audio_service/audio_service.dart';
 import 'scraper.dart' as scraper;
 import 'contacts.dart' as contacts;
 import 'server.dart' as server;
+import 'webview.dart' as webview;
 
 void main() => runApp(MyApp());
 
+//Get the icons for the Android notification player buttons.
 final playControl = MediaControl(
   androidIcon: 'drawable/ic_action_play_arrow',
   label: 'Play',
@@ -40,12 +42,14 @@ final stopControl = MediaControl(
 
 /// This Widget is the main application widget.
 class MyApp extends StatelessWidget {
-  static const String _title = '91.7 WMUH';
+  static const String _title = 'WMUH Radio';
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: _title,
+      //Put AudioServiceWidget at top of widget tree to maintain connection
+      //across every route in app.
       home: AudioServiceWidget(child: Home()),
     );
   }
@@ -60,20 +64,25 @@ class AudioServiceWidget extends StatefulWidget {
   _AudioServiceWidgetState createState() => _AudioServiceWidgetState();
 }
 
+//Create a stream that calls the getSong() function from scraper.dart every 5
+//seconds.
 Stream<List<String>> streamCreator(Duration interval) {
   StreamController<List<String>> controller;
   Timer timer;
   List<String> songData;
 
+  //Call the getSong() function and add the data to the sink of the controller.
   Future<void> callGetSong(_) async {
     songData = await scraper.getSong();
     controller.sink.add(songData);
   }
 
+  //Perform callGetSong over the interval specified.
   void startTimer() {
     timer = Timer.periodic(interval, callGetSong);
   }
 
+  //Cancel the timer and close the controller.
   void stopTimer() {
     if (timer != null) {
       timer.cancel();
@@ -82,6 +91,7 @@ Stream<List<String>> streamCreator(Duration interval) {
     }
   }
 
+  //Tell the timer what to do in each circumstance.
   controller = StreamController<List<String>>(
       onListen: startTimer,
       onPause: stopTimer,
@@ -91,12 +101,14 @@ Stream<List<String>> streamCreator(Duration interval) {
   return controller.stream;
 }
 
+//Create the "Listen" screen.
 class MainScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      //appBar: AppBar(title: Text("Listen")),
       body: Center(
+        //Create a media player that changes the button layout depending on
+        //whether the audio is playing, paused, or stopped.
         child: StreamBuilder<PlaybackState>(
           stream: AudioService.playbackStateStream,
           builder: (context, snapshot) {
@@ -105,25 +117,52 @@ class MainScreen extends StatelessWidget {
             return Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (state == BasicPlaybackState.playing)
-                  RaisedButton(child: Text("Pause"), onPressed: pause)
-                else
-                  RaisedButton(child: Text("Play"), onPressed: play),
-                if (state != BasicPlaybackState.stopped)
-                  RaisedButton(child: Text("Stop"), onPressed: stop),
+                //Display song info from the stream created by streamCreator.
                 StreamBuilder<List<String>>(
+                  //Get info every 5 seconds.
                   stream: streamCreator(const Duration(seconds: 5)),
                   builder: (context, snapshot) {
+                    //Show error if info cannot be retrieved.
                     if (snapshot.hasError) return Text('${snapshot.error}');
                     if (snapshot.hasData)
-                      return Text("Artist: " +
-                          snapshot.data[0] +
-                          "\n" +
-                          "Song: " +
-                          snapshot.data[1]);
+                      return Column(children: [
+                        //Display album art, song name (in bold), artist, and
+                        //album. If no album art exists, use default logo.
+                        if (snapshot.data.elementAt(2) != null)
+                          Image.network(snapshot.data.elementAt(2))
+                        else
+                          Image(image: AssetImage('assets/icon.jpg')),
+                        Text("\n" + snapshot.data?.elementAt(1) ?? "",
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(snapshot.data?.elementAt(0) ?? ""),
+                        Text((snapshot.data?.elementAt(3) ?? "") + "\n\n\n")
+                      ]);
+                    //Show a circular progress indicator while information is
+                    //loading.
                     return const CircularProgressIndicator();
                   },
                 ),
+                //Change currently displaying play/pause/stop controls depending
+                //on the state of playback.
+                Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      if (state == BasicPlaybackState.playing)
+                        IconButton(
+                            icon: Icon(Icons.pause),
+                            onPressed: pause,
+                            iconSize: 72.0)
+                      else
+                        IconButton(
+                            icon: Icon(Icons.play_arrow),
+                            onPressed: play,
+                            iconSize: 72.0),
+                      if (state != BasicPlaybackState.stopped)
+                        IconButton(
+                            icon: Icon(Icons.stop),
+                            onPressed: stop,
+                            iconSize: 72.0),
+                    ])
               ],
             );
           },
@@ -132,23 +171,28 @@ class MainScreen extends StatelessWidget {
     );
   }
 
+  //If audio has already been started, simply resume playing audio. Else, play
+  //the audio and create a background player as a notification that will
+  //allow the user to hear and control the audio from outside the app.
   play() async {
     if (await AudioService.running) {
       AudioService.play();
     } else {
       AudioService.start(
           backgroundTaskEntrypoint: _backgroundTaskEntrypoint,
-          androidNotificationChannelName: '91.7 WMUH',
+          androidNotificationChannelName: 'WMUH Radio',
           notificationColor: 0xA12237,
           androidNotificationIcon: 'drawable/ic_stat_radio');
     }
   }
 
+  //Set up pause and stop methods.
   pause() => AudioService.pause();
 
   stop() => AudioService.stop();
 }
 
+//Start the AudioServiceBackground widget using our AudioPlayerTask.
 _backgroundTaskEntrypoint() {
   AudioServiceBackground.run(() => AudioPlayerTask());
 }
@@ -168,22 +212,27 @@ class AudioPlayerTask extends BackgroundAudioTask {
         controls: [pauseControl, stopControl],
         basicState: BasicPlaybackState.playing);
 
+    //Set stream URL.
     await _audioPlayer.setUrl("http://192.104.181.26:8000/stream");
+    //Play audio.
     _audioPlayer.play();
+    //Use streamCreator to get song info.
     infoStream = streamCreator(const Duration(seconds: 5));
+    //Set current media item in outside player to data from scraper.
     subscription = infoStream.listen((data) {
       currentSong = MediaItem(
         id: "http://192.104.181.26:8000/stream",
-        album: "The Only Station That Matters",
-        title: data[1],
-        artist: data[0],
-//      artUri: "",
+        album: data?.elementAt(3) ?? "WMUH Radio",
+        title: data?.elementAt(1) ?? "",
+        artist: data?.elementAt(0) ?? "",
+        artUri: data?.elementAt(2) ?? "",
       );
       setItem = AudioServiceBackground.setMediaItem(currentSong);
     }, cancelOnError: true);
     await _completer.future;
   }
 
+  //Stop audio and destroy background player to save memory.
   @override
   void onStop() {
     // Broadcast that we've stopped.
@@ -215,6 +264,7 @@ class AudioPlayerTask extends BackgroundAudioTask {
   }
 }
 
+//Connect to Audio Service when app is running, disconnect when it is closed.
 class _AudioServiceWidgetState extends State<AudioServiceWidget>
     with WidgetsBindingObserver {
   @override
@@ -265,48 +315,60 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  int _currentIndex = 1;
+  //Launch app at "Listen" screen.
+  int _currentIndex = 0;
+  //Set nav bar items to be widgets of other screens.
   final List<Widget> _children = [
-    server.Home(),
     MainScreen(),
+    webview.Schedule(),
+    server.Home(),
     contacts.RadioScreen()
   ];
 
+  //Create a scaffold with the title header and bottom nav bar.
   @override
   Widget build(BuildContext context) {
     return SafeArea(
         child: Scaffold(
-          appBar: PreferredSize(
-              preferredSize: Size.fromHeight(107.5),
-              child: AppBar(
-                flexibleSpace: Image(
-                  image: AssetImage('assets/title.png'),
-                  fit: BoxFit.cover,
-                ),
-                backgroundColor: Colors.transparent,
-              )),
-          body: _children[_currentIndex],
-          bottomNavigationBar: BottomNavigationBar(
-            onTap: onTabTapped,
-            currentIndex:
-                _currentIndex, // this will be set when a new tab is tapped
-            selectedItemColor: Colors.red[600],
-            items: [
-              BottomNavigationBarItem(
-                icon: new Icon(Icons.schedule),
-                title: new Text('Schedule'),
-              ),
-              BottomNavigationBarItem(
-                icon: new Icon(Icons.radio),
-                title: new Text('Listen'),
-              ),
-              BottomNavigationBarItem(
-                  icon: Icon(Icons.message), title: Text('Contact Us'))
+      appBar: PreferredSize(
+          preferredSize: Size.fromHeight(107.5),
+          child: AppBar(
+            flexibleSpace: Image(
+              image: AssetImage('assets/title.png'),
+              fit: BoxFit.cover,
+            ),
+            backgroundColor: Colors.transparent,
+          )),
+      //Load all screens at once to preserve all states (prevents schedule from
+      // crashing.
+      body: IndexedStack(index: _currentIndex, children: _children),
+      bottomNavigationBar: BottomNavigationBar(
+        onTap: onTabTapped,
+        currentIndex:
+            _currentIndex, // this will be set when a new tab is tapped
+        selectedItemColor: Colors.red[600],
+        type: BottomNavigationBarType.fixed,
+        items: [
+          BottomNavigationBarItem(
+            icon: new Icon(Icons.radio),
+            title: new Text('Listen'),
+          ),
+          BottomNavigationBarItem(
+            icon: new Icon(Icons.schedule),
+            title: new Text('Schedule'),
+          ),
+          BottomNavigationBarItem(
+            icon: new Icon(Icons.music_note),
+            title: new Text('Send Request'),
+          ),
+          BottomNavigationBarItem(
+              icon: new Icon(Icons.message), title: new Text('Contact Us'))
         ],
       ),
     ));
   }
 
+  //Change currently showing screen.
   void onTabTapped(int index) {
     setState(() {
       _currentIndex = index;

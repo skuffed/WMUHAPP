@@ -9,7 +9,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <application
         android:name="io.flutter.app.FlutterApplication"
-        android:label="91.7 WMUH"
+        android:label="WMUH Radio"
         android:icon="@mipmap/launcher_icon"
         android:usesCleartextTraffic="true">
         <activity
