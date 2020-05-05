@@ -31,13 +31,18 @@
 ///
 import 'package:flutter/widgets.dart';
 
+// socialmedia class
 class SocialMedia {
   SocialMedia._();
 
+  // family containing all icons in file
   static const _kFontFam = 'SocialMedia';
   static const _kFontPkg = null;
 
+  // facebook icon icondata
   static const IconData facebook = IconData(0xe800, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  // twitter icon icondata
   static const IconData twitter = IconData(0xe801, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  // instagram icon icondata
   static const IconData instagram = IconData(0xf32d, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 }

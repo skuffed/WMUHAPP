@@ -20,13 +20,20 @@ class Home extends StatefulWidget {
   HomeState createState() => HomeState();
 }
 
+
+// create the submit song request screen
 class HomeState extends State<Home> {
   List<Item> items = List();
   static Item item;
+  // database reference for pushing request to database
   static DatabaseReference itemRef;
-
+  // visibility variable for successful submission message
+  static var _tsvisibility = false;
+  // form key used to connect database to widget containing the text based forms of user input
   static final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
+
+  // initial state
   @override
   void initState() {
     super.initState();
@@ -53,9 +60,14 @@ class HomeState extends State<Home> {
     });
   }
 
+  // function for handling the song requests and pushing it to the database
+
   static void handleSubmit() {
     final FormState form = formKey.currentState;
-
+    // variable for message visibility for when a song is successfully submitted
+    _tsvisibility = true;
+    // check if both text fields are properly filled out before submission of song is successful
+    // then save the forms and reset its values to empty the text fields after successful submission
     if (form.validate()) {
       form.save();
       form.reset();
@@ -71,6 +83,7 @@ class HomeState extends State<Home> {
 //        title: Text('Submit Songs!'),
 //      ),
       resizeToAvoidBottomPadding: false,
+      // layout text forms and submit button in vertical column format
       body: Column(
         children: <Widget>[
           Text('\nWant to hear your favorite song on the air?\nEnter your request below!', style: TextStyle(fontSize: 20)),
@@ -78,6 +91,7 @@ class HomeState extends State<Home> {
             flex: 0,
             child: Center(
               child: Form(
+                // formkey needed to save each request when handling submission to database
                 key: formKey,
                 child: Flex(
                   direction: Axis.vertical,
@@ -86,6 +100,7 @@ class HomeState extends State<Home> {
                     ListTile(
                       //leading: Icon(Icons.info),
                       title: TextFormField(
+                        // validators used to ensure the value in the text isn't null (empty)
                         initialValue: "",
                         onSaved: (val) => item.title = val,
                         validator: (val) => val == "" ? val : null,
@@ -95,6 +110,7 @@ class HomeState extends State<Home> {
                     ListTile(
                       //leading: Icon(Icons.info),
                       title: TextFormField(
+                        // validators used to ensure the value in the text isn't null (empty)
                         initialValue: '',
                         onSaved: (val) => item.body = val,
                         validator: (val) => val == "" ? val : null,
@@ -106,9 +122,14 @@ class HomeState extends State<Home> {
                         handleSubmit();
                       },
                     ),
-//                    Text(
-//                        '\nIf form turns red after pressing submit button, one or more fields were not properly filled out.\nIf form empties after pressing the submit button, your song has been successfully submitted.', style: TextStyle(fontSize: 16)
-//                    ),
+                    // visible text that relies on variable to determine visibility
+                    // at initial state of app, message is invisible, upon successful
+                    // song submission, message becomes visible in order
+                    // to let the user know their request came through
+                    Visibility(
+                      visible: _tsvisibility,
+                      child: Text("Song successfully submitted!"),
+                    )
                   ],
                 ),
               ),
@@ -121,6 +142,7 @@ class HomeState extends State<Home> {
   }
 }
 
+// item class for capturing snapshots of data
 class Item {
   String key;
   String title;

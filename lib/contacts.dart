@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
 class RadioScreen extends StatelessWidget {
   RadioScreen({Key key}) : super(key: key);
 
-
+// create widget containing contacts screen layout
   @override
   Widget build(BuildContext context) => new Scaffold(
 
@@ -35,27 +35,31 @@ class RadioScreen extends StatelessWidget {
 //    ),
     body: new Center(
       child: new Column(
+        // organize social media links in column format
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: <Widget> [
 
           new Text("Find us on", style: TextStyle(fontSize: 20)),
+          // icon button containing link to WMUH Facebook page
           new IconButton(
             onPressed: () => launch("https://www.facebook.com/pages/WMUH/105617379471492"),
             icon: new Icon(const IconData(0xe800, fontFamily: 'SocialMedia')),
             color: Colors.blue,
           ),
+          // icon button containing link to WMUH Twitter page
           new IconButton(
             onPressed: () => launch("https://twitter.com/wmuhfm?ref_src=twsrc%5Egoogle%7Ctwcamp%5Eserp%7Ctwgr%5Eauthor"),
             icon: new Icon(const IconData(0xe801, fontFamily: 'SocialMedia')),
             color: Colors.cyanAccent,
           ),
+          // icon button containing link to WMUH Instagram page
           new IconButton(
               onPressed: () => launch("https://www.instagram.com/wmuhfm/?hl=en"),
             icon: new Icon(const IconData(0xf32d, fontFamily: 'SocialMedia')),
             color: Colors.purpleAccent,
           ),
-
+          // button for email
           new FlatButton(
             onPressed: () => launch("mailto:WMUHmusic@muhlenberg.edu"),
             child: new Row (
@@ -67,6 +71,7 @@ class RadioScreen extends StatelessWidget {
             ],
             ),
           ),
+          // button for phone
           new FlatButton(
             onPressed: () => launch("tel://4846643456"),
             child: new Row (
