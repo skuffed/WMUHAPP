@@ -85,8 +85,9 @@ class HomeState extends State<Home> {
       resizeToAvoidBottomPadding: false,
       // layout text forms and submit button in vertical column format
       body: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: <Widget>[
-          Text('\nWant to hear your favorite song on the air?\nEnter your request below!', style: TextStyle(fontSize: 20)),
+          Text('Want to hear your favorite song on the air?\nEnter your request below!', style: TextStyle(fontSize: 20)),
           Flexible(
             flex: 0,
             child: Center(
@@ -96,7 +97,7 @@ class HomeState extends State<Home> {
                 child: Flex(
                   direction: Axis.vertical,
                   children: <Widget>[
-                    Text("\n\nSong Title"),
+                    Text("Song Title"),
                     ListTile(
                       //leading: Icon(Icons.info),
                       title: TextFormField(

@@ -126,16 +126,19 @@ class MainScreen extends StatelessWidget {
                     if (snapshot.hasError) return Text('${snapshot.error}');
                     if (snapshot.hasData)
                       return Column(children: [
-                        //Display album art, song name (in bold), artist, and
+                        //Display show name (big and bold), album art, song name (in bold), artist, and
                         //album. If no album art exists, use default logo.
+                        Text(snapshot.data?.elementAt(4) ?? "\n",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30.0)),
+                        Text("\n\n"),
                         if (snapshot.data.elementAt(2) != null)
                           Image.network(snapshot.data.elementAt(2))
                         else
                           Image(image: AssetImage('assets/icon.jpg')),
-                        Text("\n" + snapshot.data?.elementAt(1) ?? "",
+                        Text("\n\n" + snapshot.data?.elementAt(1) ?? "\n",
                             style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text(snapshot.data?.elementAt(0) ?? ""),
-                        Text((snapshot.data?.elementAt(3) ?? "") + "\n\n\n")
+                        Text(snapshot.data?.elementAt(0) ?? "\n"),
+                        Text((snapshot.data?.elementAt(3) ?? "\n") + "\n\n\n")
                       ]);
                     //Show a circular progress indicator while information is
                     //loading.
@@ -223,7 +226,7 @@ class AudioPlayerTask extends BackgroundAudioTask {
       currentSong = MediaItem(
         id: "http://192.104.181.26:8000/stream",
         album: data?.elementAt(3) ?? "WMUH Radio",
-        title: data?.elementAt(1) ?? "",
+        title: data?.elementAt(1) ?? data?.elementAt(4) ?? "",
         artist: data?.elementAt(0) ?? "",
         artUri: data?.elementAt(2) ?? "",
       );
