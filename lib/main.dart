@@ -131,7 +131,7 @@ class MainScreen extends StatelessWidget {
                         Text(snapshot.data?.elementAt(4) ?? "\n",
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30.0)),
                         Text("\n\n"),
-                        if (snapshot.data.elementAt(2) != null)
+                        if (snapshot.data.elementAt(2) != "https://spinitron.com/static/pictures/placeholders/loudspeaker.svg")
                           Image.network(snapshot.data.elementAt(2))
                         else
                           Image(image: AssetImage('assets/icon.jpg')),
@@ -225,7 +225,7 @@ class AudioPlayerTask extends BackgroundAudioTask {
     subscription = infoStream.listen((data) {
       currentSong = MediaItem(
         id: "http://192.104.181.26:8000/stream",
-        album: data?.elementAt(3) ?? "WMUH Radio",
+        album: data?.elementAt(3) ?? "",
         title: data?.elementAt(1) ?? data?.elementAt(4) ?? "",
         artist: data?.elementAt(0) ?? "",
         artUri: data?.elementAt(2) ?? "",
